@@ -1,0 +1,4 @@
+.temperature-label, .slider-value-label {
+    width: 60pt;
+    text-align: right;
+}

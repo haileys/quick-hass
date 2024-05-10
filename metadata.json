@@ -1,0 +1,8 @@
+{
+  "name": "Climate",
+  "description": "hailey's home climate",
+  "uuid": "climate@hails.org",
+  "shell-version": [
+    "46"
+  ]
+}
