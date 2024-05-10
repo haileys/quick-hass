@@ -14,8 +14,11 @@ const hass = new HomeAssistant(hassConfig, [
     ENTITY_HEATING_SWITCH,
 ]);
 
-hass.inputNumber(ENTITY_TEMP_REQUEST)
-    .bindState((temp) => console.log(`-> ${temp}`));
+const tempRequest = hass.getEntity(ENTITY_TEMP_REQUEST);
+tempRequest.connect("notify::value", () => console.log(tempRequest.value));
+
+const heatingSwitch = hass.getEntity(ENTITY_HEATING_SWITCH);
+heatingSwitch.connect("notify::value", () => console.log(heatingSwitch.value));
 
 // setTimeout(() => { hass.setTemperatureRequest(21); }, 1000);
 
