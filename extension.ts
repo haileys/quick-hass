@@ -1,3 +1,12 @@
+// import "@girs/clutter-14/ambient";
+// import "@girs/st-14/ambient";
+// import "@girs/gnome-shell/ambient";
+
+declare interface Console {
+    log(...args: any): void;
+}
+declare var console: Console;
+
 import Clutter from "gi://Clutter";
 import St from "gi://St";
 
@@ -7,10 +16,10 @@ import { QuickMenuToggle, SystemIndicator } from 'resource:///org/gnome/shell/ui
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import config from "./config.js";
-import { HomeAssistant } from "./lib/hass.js";
-import { Slider, SwitchButton } from "./lib/controls.js";
-import { bindProperty, bindPropertyBidi, bindPropertyMapped } from "./lib/gobject.js";
-import { InputBoolean, InputNumber, InputSelect } from "./lib/hass/entity.js";
+import { HomeAssistant } from "./lib/hass";
+import { Slider, SwitchButton } from "./lib/controls";
+import { bindProperty, bindPropertyBidi, bindPropertyMapped } from "./lib/gobject";
+import { InputBoolean, InputNumber, InputSelect } from "./lib/hass/entity";
 
 function configureProperty(hass, target, property, configValue) {
     if (typeof configValue === "undefined") {
@@ -197,6 +206,8 @@ function createWidget(hass, widgetConfig) {
 }
 
 export default class QuickSettingsExampleExtension extends Extension {
+    _indicator: SystemIndicator;
+
     enable() {
         this._indicator = new SystemIndicator();
 

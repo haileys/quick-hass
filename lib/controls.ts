@@ -2,7 +2,8 @@ import St from "gi://St";
 import GObject from 'gi://GObject';
 import { Switch } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Slider as UiSlider } from "resource:///org/gnome/shell/ui/slider.js";
-import { doubleSpec, booleanSpec, bindProperty } from "./gobject.js";
+
+import { doubleSpec, booleanSpec, bindProperty } from "./gobject";
 
 export const Slider = GObject.registerClass({
     Properties: {

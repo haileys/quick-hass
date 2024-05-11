@@ -1,5 +1,5 @@
-import GObject from 'gi://GObject';
-import { stringSpec, doubleSpec, booleanSpec } from '../gobject.js';
+import GObject from "gi://GObject";
+import { stringSpec, doubleSpec, booleanSpec } from "../gobject";
 
 export function newEntity(hass, entityId) {
     const [entityType] = entityId.split(".");

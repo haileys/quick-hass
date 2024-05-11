@@ -1,8 +1,7 @@
-import Soup from "gi://Soup?version=3.0";
 import GLib from "gi://GLib";
 
 import { HassSocket } from "./hass/socket.js";
-import { newEntity } from "./hass/entity.js";
+import { newEntity } from "./hass/entity";
 
 export class HomeAssistant {
     constructor(config) {

@@ -1,0 +1,45 @@
+{
+    "compilerOptions": {
+        "lib": ["ESNext"],
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        // "typeRoots": "./node_modules/@girs",
+        "types": [
+            "@girs/gnome-shell/ambient",
+            "@girs/clutter-14/ambient",
+            "@girs/st-14/ambient",
+        ],
+        // "typeRoots": ["./node_modules/@girs"],
+        // "types": ["clutter-14", "st-14"]
+        // "module": "NodeNext",
+        // "moduleResolution": "NodeNext"
+    },
+    // "include": [
+    //     "@girs/gnome-shell/ambient",
+    //     "@girs/clutter-14/ambient",
+    //     "@girs/st-14/ambient",
+    // ],
+    "files": ["extension.ts"],
+}
+
+// {
+//     "version": "1.2.0",
+//     "compilerOptions": {
+//         "target": "es2020",
+//         "strict": true,
+//         "outDir": "./target",
+//         "forceConsistentCasingInFileNames": true,
+//         "downlevelIteration": true,
+//         "lib": [
+//             "es2020"
+//         ],
+//         "pretty": true,
+//         "removeComments": true,
+//         "incremental": true,
+//         "noUnusedLocals": true,
+//         "noUnusedParameters": true,
+//         "moduleResolution": "NodeNext",
+//         "module": "NodeNext"
+//     },
+// }

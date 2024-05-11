@@ -1,0 +1,9 @@
+{
+    "private": true,
+    "devDependencies": {
+        "@girs/clutter-14": "^14.0.0-4.0.0-beta.5",
+        "@girs/gnome-shell": "^46.0.0-beta8",
+        "esbuild": "0.21.1",
+        "typescript": "^5.4.5"
+    }
+}
