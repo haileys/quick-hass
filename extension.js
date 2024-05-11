@@ -12,14 +12,7 @@ import config from "./config.js";
 import { HomeAssistant } from "./lib/hass.js";
 import { Slider, SwitchButton } from "./lib/controls.js";
 import { bindProperty, bindPropertyBidi, bindPropertyMapped } from "./lib/gobject.js";
-import { InputBoolean, InputNumber } from "./lib/hass/entity.js";
-
-const ENTITY_TEMP_REQUEST = "input_number.thermostat_request_temperature";
-const ENTITY_HEATING_SWITCH = "input_boolean.heating";
-
-function displayTemperature(temp) {
-    return `${temp}°C`;
-}
+import { InputBoolean, InputNumber, InputSelect } from "./lib/hass/entity.js";
 
 function configureProperty(hass, target, property, configValue) {
     if (typeof configValue === "undefined") {
@@ -49,8 +42,10 @@ function configureProperty(hass, target, property, configValue) {
 }
 
 function createInputNumberItem(entity, itemConfig) {
-    const slider = new Slider();
-    const sliderLabel = new St.Label({ x_align: Clutter.ActorAlign.END });
+    const slider = new Slider({ x_expand: true });
+    const sliderLabel = new St.Label({
+        style_class: "quickhass-slider-value"
+    });
 
     if (typeof itemConfig.renderValue === "function") {
         bindPropertyMapped(slider, "value", sliderLabel, "text", itemConfig.renderValue);
@@ -63,31 +58,107 @@ function createInputNumberItem(entity, itemConfig) {
     bindProperty(entity, "step", slider, "step");
     bindPropertyBidi(entity, "value", slider, "value");
 
-    return [slider, sliderLabel];
+    const box = new St.BoxLayout({ x_expand: true });
+    box.add_child(slider);
+    box.add_child(sliderLabel);
+    return box;
 }
 
 function createInputBooleanItem(entity, itemConfig) {
     const switchButton = new SwitchButton();
-    switchButton.x_align = Clutter.ActorAlign.END;
-
     bindPropertyBidi(entity, "value", switchButton, "checked");
 
-    return [switchButton];
+    const bin = new St.Bin({ x_expand: true, x_align: Clutter.ActorAlign.END });
+    bin.set_child(switchButton);
+
+    return bin;
 }
 
-function appendItemControl(hass, itemConfig, gridLayout) {
-    const entity = hass.getEntity(itemConfig.entity);
+function createInputSelectItem(entity, itemConfig) {
+    const menuItem = new PopupMenu.PopupSubMenuMenuItem("", false);
 
-    let controls;
+    // only close immediate menu upon item activated, not top menu:
+    menuItem.menu.itemActivated = () => {
+        menuItem.menu.close(true);
+    };
+
+    if (typeof itemConfig.title === "undefined") {
+        bindProperty(entity, "title", menuItem.label, "text");
+    } else {
+        configureProperty(entity.hass, menuItem.label, "text", itemConfig.title);
+    }
+
+    const expander = menuItem.get_child_at_index(2);
+    if (!(expander instanceof St.Bin)) {
+        throw new Error("expander not instanceof St.Bin!");
+    }
+
+    const currentOptionLabel = new St.Label({
+        x_expand: true,
+        x_align: Clutter.ActorAlign.END,
+    });
+    bindProperty(entity, "value", currentOptionLabel, "text");
+    expander.set_child(currentOptionLabel);
+
+    const updateOptions = () => {
+        menuItem.menu.removeAll();
+
+        for (const option of entity.options) {
+            const optionItem = new PopupMenu.PopupBaseMenuItem();
+            // optionItem.setOrnament(PopupMenu.Ornament.NONE);
+
+            const label = new St.Label({ text: option });
+            // const icon = new St.Icon({ icon_name: "object-select-symbolic" });
+            optionItem.add_child(label);
+            // optionItem.add_child(icon);
+
+            const setOrnament = () => {
+                optionItem.setOrnament(entity.value === option
+                    ? PopupMenu.Ornament.CHECK
+                    : PopupMenu.Ornament.NONE);
+            };
+
+            setOrnament();
+            entity.connect("notify::value", setOrnament);
+
+            optionItem.connect("activate", () => {
+                entity.value = option;
+                console.log("optionItem.activate:", arguments);
+            });
+
+            menuItem.menu.addMenuItem(optionItem);
+        }
+    };
+
+    updateOptions();
+    entity.connect("notify::options", updateOptions);
+
+    return menuItem;
+}
+
+function createItemControl(entity, itemConfig) {
     if (entity instanceof InputNumber) {
-        controls = createInputNumberItem(entity, itemConfig);
+        return createInputNumberItem(entity, itemConfig);
     } else if (entity instanceof InputBoolean) {
-        controls = createInputBooleanItem(entity, itemConfig);
+        return createInputBooleanItem(entity, itemConfig);
+    } else if (entity instanceof InputSelect) {
+        return createInputSelectItem(entity, itemConfig);
     } else {
         throw new Error("unknown/unsupported entity type: " + entity.entity_id);
     }
+}
 
-    const titleLabel = new St.Label();
+function createItemMenuItem(hass, itemConfig) {
+    const entity = hass.getEntity(itemConfig.entity);
+    const control = createItemControl(entity, itemConfig);
+
+    // if it's already a menu item, nothing further to do
+    if (control instanceof PopupMenu.PopupBaseMenuItem) {
+        return control;
+    }
+
+    // otherwise wrap it in a menu item to return
+    const titleLabel = new St.Label({ style_class: "quickhass-item-title-label" });
     titleLabel.y_expand = true;
     titleLabel.y_align = Clutter.ActorAlign.CENTER;
 
@@ -97,32 +168,10 @@ function appendItemControl(hass, itemConfig, gridLayout) {
         configureProperty(hass, titleLabel, "text", itemConfig.title);
     }
 
-    gridLayout.attach_next_to(titleLabel, null, Clutter.GridPosition.BOTTOM, 1, 1);
-
-    if (controls.length == 1) {
-        gridLayout.attach_next_to(controls[0], titleLabel, Clutter.GridPosition.RIGHT, 2, 1);
-    } else if (controls.length == 2) {
-        gridLayout.attach_next_to(controls[0], titleLabel, Clutter.GridPosition.RIGHT, 1, 1);
-        gridLayout.attach_next_to(controls[1], controls[0], Clutter.GridPosition.RIGHT, 1, 1);
-    }
-}
-
-function createItemsGrid(hass, items) {
-    const gridLayout = new Clutter.GridLayout({
-        row_spacing: 8,
-        column_spacing: 8,
-    });
-    const grid = new St.Widget({
-        layout_manager: gridLayout,
-        x_expand: true,
-    });
-    gridLayout.hookup_style(grid);
-
-    for (const itemConfig of items) {
-        appendItemControl(hass, itemConfig, gridLayout);
-    }
-
-    return grid;
+    const menuItem = new PopupMenu.PopupBaseMenuItem();
+    menuItem.add_child(titleLabel);
+    menuItem.add_child(control);
+    return menuItem;
 }
 
 function createWidget(hass, widgetConfig) {
@@ -139,81 +188,15 @@ function createWidget(hass, widgetConfig) {
     configureProperty(hass, widget, "subtitle", widgetConfig.subtitle);
     configureProperty(hass, widget, "icon_name", widgetConfig.icon);
 
-    const base = new PopupMenu.PopupBaseMenuItem();
-    widget.menu.addMenuItem(base);
+    widget.menu.itemActivated = () => {};
 
-    const grid = createItemsGrid(hass, widgetConfig.items);
-    base.add_child(grid);
+    for (const itemConfig of widgetConfig.items) {
+        const menuItem = createItemMenuItem(hass, itemConfig);
+        widget.menu.addMenuItem(menuItem);
+    }
 
     return widget;
 }
-
-const WidgetItem = GObject.registerClass(
-class WidgetItem extends QuickMenuToggle {
-    constructor(hass, widgetConfig) {
-        super({
-            title: "Heating",
-            iconName: "weather-few-clouds-symbolic",
-            toggleMode: true,
-        });
-
-        this.hass = new HomeAssistant(config.homeAssistant);
-
-        const base = new PopupMenu.PopupBaseMenuItem();
-        this.menu.addMenuItem(base);
-
-        this.hass = new HomeAssistant(config.homeAssistant, [
-            ENTITY_TEMP_REQUEST,
-            ENTITY_HEATING_SWITCH
-        ]);
-
-        const gridLayout = new Clutter.GridLayout({
-            row_spacing: 8,
-            column_spacing: 8,
-        });
-        const grid = new St.Widget({
-            layout_manager: gridLayout,
-            x_expand: true,
-        });
-        gridLayout.hookup_style(grid);
-        base.add_child(grid);
-
-        const heatingItemLabel = new St.Label();
-        heatingItemLabel.y_expand = true;
-        heatingItemLabel.y_align = Clutter.ActorAlign.CENTER;
-        const heatingUiSwitch = new SwitchButton();
-        heatingUiSwitch.x_align = Clutter.ActorAlign.END;
-
-        const tempItemLabel = new St.Label();
-        tempItemLabel.y_expand = true;
-        tempItemLabel.y_align = Clutter.ActorAlign.CENTER;
-        const tempSlider = new Slider();
-        const tempSliderLabel = new St.Label({ style_class: "temperature-label" });
-
-        const tempRequest = this.hass.getEntity(ENTITY_TEMP_REQUEST);
-        const heatingSwitch = this.hass.getEntity(ENTITY_HEATING_SWITCH);
-
-        bindProperty(tempRequest, "title", tempItemLabel, "text");
-        bindProperty(tempRequest, "min-value", tempSlider, "min-value");
-        bindProperty(tempRequest, "max-value", tempSlider, "max-value");
-        bindProperty(tempRequest, "step", tempSlider, "step");
-        bindPropertyBidi(tempRequest, "value", tempSlider, "value");
-        bindPropertyMapped(tempRequest, "value", this, "subtitle", displayTemperature);
-
-        bindPropertyMapped(tempSlider, "value", tempSliderLabel, "text", displayTemperature);
-
-        bindPropertyBidi(heatingSwitch, "value", this, "checked");
-        bindPropertyBidi(heatingSwitch, "value", heatingUiSwitch, "checked");
-        bindProperty(heatingSwitch, "title", heatingItemLabel, "text");
-
-        gridLayout.attach_next_to(heatingItemLabel, null, Clutter.GridPosition.BOTTOM, 1, 1);
-        gridLayout.attach_next_to(heatingUiSwitch, heatingItemLabel, Clutter.GridPosition.RIGHT, 2, 1);
-
-        gridLayout.attach_next_to(tempItemLabel, null, Clutter.GridPosition.BOTTOM, 1, 1);
-        gridLayout.attach_next_to(tempSlider, tempItemLabel, Clutter.GridPosition.RIGHT, 1, 1);
-        gridLayout.attach_next_to(tempSliderLabel, tempSlider, Clutter.GridPosition.RIGHT, 1, 1);
-    }
-});
 
 export default class QuickSettingsExampleExtension extends Extension {
     enable() {
@@ -223,7 +206,6 @@ export default class QuickSettingsExampleExtension extends Extension {
         for (const widgetConfig of config.widgets) {
             this._indicator.quickSettingsItems.push(createWidget(hass, widgetConfig));
         }
-        // this._indicator.quickSettingsItems.push(new HeatingToggle());
 
         Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
     }
