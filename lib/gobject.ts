@@ -34,3 +34,7 @@ export function bindPropertyMapped(source, sourceName, target, targetName, mapFu
     source.bind_property_full(sourceName, target, targetName,
         GObject.BindingFlags.SYNC_CREATE, transform, null);
 }
+
+export function registerClass<T>(opts): (klass: T, _context: ClassDecoratorContext) => T {
+    return (klass, _context) => GObject.registerClass(opts, klass as any) as T;
+}

@@ -1,5 +1,5 @@
 import GObject from "gi://GObject";
-import { stringSpec, doubleSpec, booleanSpec } from "../gobject";
+import { stringSpec, doubleSpec, booleanSpec, registerClass } from "../gobject";
 
 export function newEntity(hass, entityId) {
     const [entityType] = entityId.split(".");
@@ -13,14 +13,14 @@ export function newEntity(hass, entityId) {
     }
 }
 
-export const BaseEntity = GObject.registerClass({
+@registerClass({
     Properties: {
         "entity-id": stringSpec("entity-id", GObject.ParamFlags.READABLE),
         "title": stringSpec("title", GObject.ParamFlags.READABLE),
-        "ready": booleanSpec("ready", GObject.ParamFlags.READABLE),
+        "ready": booleanSpec("ready", GObject.ParamFlags.READABLE, false),
     },
-},
-class BaseEntity extends GObject.Object {
+})
+export class BaseEntity extends GObject.Object {
     _hass = null;
     _entityId = null;
     _state = null;
@@ -44,10 +44,14 @@ class BaseEntity extends GObject.Object {
         return true;
     }
 
+    getStateFromUpdate(state) {
+        return { attributes: state.attributes };
+    }
+
     receiveState(state) {
         // update state
         const prevState = this._state;
-        const newState = this.constructor.getStateFromUpdate(state);
+        const newState = this.getStateFromUpdate(state);
         this._state = newState;
 
         // call lifecycle method to notify for property changes
@@ -85,7 +89,7 @@ class BaseEntity extends GObject.Object {
     get ready() {
         return this._state !== null;
     }
-})
+}
 
 export const InputNumber = GObject.registerClass({
     Properties: {
@@ -96,7 +100,7 @@ export const InputNumber = GObject.registerClass({
     }
 },
 class InputNumber extends BaseEntity {
-    static getStateFromUpdate(state) {
+    getStateFromUpdate(state) {
         return { value: Number(state.state), attributes: state.attributes };
     }
 
@@ -148,7 +152,7 @@ export const InputBoolean = GObject.registerClass({
     }
 },
 class InputBoolean extends BaseEntity {
-    static getStateFromUpdate(state) {
+    getStateFromUpdate(state) {
         function tristate(state) {
             if (state === "on") {
                 return true;
@@ -179,7 +183,7 @@ class InputBoolean extends BaseEntity {
             } else if (value === false) {
                 service = "turn_off";
             } else {
-                console.warn(`unknown value in InputBoolean.value setter: ${on}`);
+                console.warn(`unknown value in InputBoolean.value setter: ${value}`);
                 return;
             }
 
@@ -202,7 +206,7 @@ export const InputSelect = GObject.registerClass({
     }
 },
 class InputSelect extends BaseEntity {
-    static getStateFromUpdate(state) {
+    getStateFromUpdate(state) {
         return { value: state.state, attributes: state.attributes };
     }
 

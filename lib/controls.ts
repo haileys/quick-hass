@@ -110,10 +110,12 @@ class Slider extends St.Bin {
 
 export const SwitchButton = GObject.registerClass({
     Properties: {
-        "state": booleanSpec("state", GObject.ParamFlags.READWRITE),
+        "state": booleanSpec("state", GObject.ParamFlags.READWRITE, false),
     }
 },
 class SwitchButton extends St.Button {
+    _switch: Switch;
+
     constructor(params) {
         super({ ...params, toggle_mode: "true" });
 
@@ -122,4 +124,13 @@ class SwitchButton extends St.Button {
 
         this.set_child(this._switch);
     }
+
+    get state(): boolean {
+        return this.checked;
+    }
+
+    set state(state: boolean) {
+        this.checked = state;
+    }
 });
+

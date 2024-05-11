@@ -2,11 +2,6 @@
 // import "@girs/st-14/ambient";
 // import "@girs/gnome-shell/ambient";
 
-declare interface Console {
-    log(...args: any): void;
-}
-declare var console: Console;
-
 import Clutter from "gi://Clutter";
 import St from "gi://St";
 
@@ -20,6 +15,7 @@ import { HomeAssistant } from "./lib/hass";
 import { Slider, SwitchButton } from "./lib/controls";
 import { bindProperty, bindPropertyBidi, bindPropertyMapped } from "./lib/gobject";
 import { InputBoolean, InputNumber, InputSelect } from "./lib/hass/entity";
+import "./lib/external";
 
 function configureProperty(hass, target, property, configValue) {
     if (typeof configValue === "undefined") {
@@ -72,7 +68,7 @@ function createInputNumberItem(entity, itemConfig) {
 }
 
 function createInputBooleanItem(entity, itemConfig) {
-    const switchButton = new SwitchButton();
+    const switchButton = new SwitchButton({});
     bindPropertyBidi(entity, "value", switchButton, "checked");
 
     const bin = new St.Bin({ x_expand: true, x_align: Clutter.ActorAlign.END });

@@ -1,11 +1,14 @@
 import GLib from "gi://GLib";
 
 import { HassSocket } from "./hass/socket.js";
-import { newEntity } from "./hass/entity";
+import { newEntity, BaseEntity } from "./hass/entity";
 
 export class HomeAssistant {
+    entities: Map<string, BaseEntity>;
+    socket: HassSocket;
+    private stateReloadScheduled: boolean = false;
+
     constructor(config) {
-        this.states = new Map();
         this.entities = new Map();
         this.socket = new HassSocket(config.url, config.token);
         this.socket.onAuthenticated = () => {
