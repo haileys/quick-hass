@@ -1,6 +1,6 @@
 import GObject from 'gi://GObject';
 
-export function doubleSpec(name, flags) {
+export function doubleSpec(name: string, flags: number) {
     return GObject.ParamSpec.double(name, "", "",
         flags,
         Number.MIN_SAFE_INTEGER,
@@ -9,32 +9,52 @@ export function doubleSpec(name, flags) {
     );
 }
 
-export function stringSpec(name, flags) {
-    return GObject.ParamSpec.string(name, "", "", flags, null);
+export function stringSpec(name: string, flags: number) {
+    return GObject.ParamSpec.string(name, "", "", flags, "");
 }
 
-export function booleanSpec(name, flags, default_) {
+export function booleanSpec(name: string, flags: number, default_: boolean) {
     return GObject.ParamSpec.boolean(name, "", "", flags, default_);
 }
 
-export function bindProperty(source, sourceName, target, targetName) {
+export function bindProperty(
+    source: GObject.Object,
+    sourceName: string,
+    target: GObject.Object,
+    targetName: string,
+) {
     source.bind_property(sourceName, target, targetName,
         GObject.BindingFlags.SYNC_CREATE);
 }
 
-export function bindPropertyBidi(source, sourceName, target, targetName) {
+export function bindPropertyBidi(
+    source: GObject.Object,
+    sourceName: string,
+    target: GObject.Object,
+    targetName: string,
+) {
     source.bind_property(sourceName, target, targetName,
         GObject.BindingFlags.SYNC_CREATE | GObject.BindingFlags.BIDIRECTIONAL);
 }
 
-export function bindPropertyMapped(source, sourceName, target, targetName, mapFunc) {
+export function bindPropertyMapped<T, U>(
+    source: GObject.Object,
+    sourceName: string,
+    target: GObject.Object,
+    targetName: string,
+    mapFunc: (_: T) => U,
+) {
     // turn the map function into something that bind_property expects:
-    const transform = (_binding, value) => [true, mapFunc(value)];
+    const transform = (_binding: unknown, value: T): [boolean, U] => [true, mapFunc(value)];
 
     source.bind_property_full(sourceName, target, targetName,
-        GObject.BindingFlags.SYNC_CREATE, transform, null);
+        GObject.BindingFlags.SYNC_CREATE, transform, null as any);
 }
 
-export function registerClass<T>(opts): (klass: T, _context: ClassDecoratorContext) => T {
+type RegisterClassOpts = {
+    Properties?: { [key: string]: GObject.ParamSpec }
+};
+
+export function registerClass<T>(opts: RegisterClassOpts): (klass: T, _context: ClassDecoratorContext) => T {
     return (klass, _context) => GObject.registerClass(opts, klass as any) as T;
 }

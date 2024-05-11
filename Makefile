@@ -1,6 +1,6 @@
 .PHONY: build
 build: node_modules
-	node_modules/.bin/esbuild --bundle extension.ts --outdir=. --external:'gi://*' --external:'resource://*' --format=esm
+	node_modules/.bin/esbuild --bundle extension.ts --outdir=. --external:'gi://*' --external:'resource://*' --format=esm --target=es2017
 
 .PHONY: check
 check: node_modules

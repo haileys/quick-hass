@@ -10,6 +10,7 @@
             "@girs/clutter-14/ambient",
             "@girs/st-14/ambient",
         ],
+        "strict": true,
         // "typeRoots": ["./node_modules/@girs"],
         // "types": ["clutter-14", "st-14"]
         // "module": "NodeNext",

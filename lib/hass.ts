@@ -1,14 +1,14 @@
-import GLib from "gi://GLib";
-
-import { HassSocket } from "./hass/socket.js";
+import { HassSocket, AnyMessage, MessageReply } from "./hass/socket.js";
+import { StateChangedEvent, EntityId, EntityState } from "./hass/types";
 import { newEntity, BaseEntity } from "./hass/entity";
+import type { HomeAssistant as HomeAssistantConfig } from "../config";
 
 export class HomeAssistant {
     entities: Map<string, BaseEntity>;
     socket: HassSocket;
     private stateReloadScheduled: boolean = false;
 
-    constructor(config) {
+    constructor(config: HomeAssistantConfig) {
         this.entities = new Map();
         this.socket = new HassSocket(config.url, config.token);
         this.socket.onAuthenticated = () => {
@@ -32,7 +32,7 @@ export class HomeAssistant {
         setTimeout(task, 0);
     }
 
-    sendMessage(msg, callback) {
+    sendMessage<M extends AnyMessage>(msg: M, callback?: (reply: MessageReply<M>) => void) {
         return this.socket.sendMessage(msg, callback);
     }
 
@@ -52,11 +52,11 @@ export class HomeAssistant {
         });
     }
 
-    onStateChanged(data) {
+    onStateChanged(data: StateChangedEvent) {
         this.receiveEntityState(data.entity_id, data.new_state);
     }
 
-    receiveEntityState(entityId, entityState) {
+    receiveEntityState(entityId: EntityId, entityState: EntityState) {
         const entity = this.entities.get(entityId);
 
         if (entity) {
@@ -64,9 +64,9 @@ export class HomeAssistant {
         }
     }
 
-    getEntity(id) {
+    getEntity(id: EntityId): BaseEntity | null {
         if (this.entities.has(id)) {
-            return this.entities.get(id);
+            return this.entities.get(id) ?? null;
         } else {
             const entity = newEntity(this, id);
             this.entities.set(id, entity);

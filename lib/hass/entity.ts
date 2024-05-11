@@ -1,7 +1,9 @@
 import GObject from "gi://GObject";
 import { stringSpec, doubleSpec, booleanSpec, registerClass } from "../gobject";
+import type { HomeAssistant } from "../hass";
+import type { EntityId, EntityState } from "./types";
 
-export function newEntity(hass, entityId) {
+export function newEntity(hass: HomeAssistant, entityId: EntityId) {
     const [entityType] = entityId.split(".");
 
     switch (entityType) {
@@ -21,17 +23,23 @@ export function newEntity(hass, entityId) {
     },
 })
 export class BaseEntity extends GObject.Object {
-    _hass = null;
-    _entityId = null;
-    _state = null;
+    _hass: HomeAssistant;
+    _entityId: EntityId;
+    _state: { value: any, attributes: any } | null = null;
 
-    constructor(hass, entityId) {
+    constructor(hass: HomeAssistant, entityId: EntityId) {
         super();
         this._hass = hass;
         this._entityId = entityId;
     }
 
-    willUpdateValue(newValue) {
+    willUpdateValue(newValue: any) {
+        if (!this._state) {
+            // can't update entity state from our side until it's
+            // loaded from hass side
+            return false;
+        }
+
         const prevValue = this._state.value;
 
         // nothing to do if no change to value
@@ -44,18 +52,18 @@ export class BaseEntity extends GObject.Object {
         return true;
     }
 
-    getStateFromUpdate(state) {
-        return { attributes: state.attributes };
+    getStateFromUpdate(state: EntityState): { value: any, attributes: any } {
+        throw new Error("must be overridden in subclass");
     }
 
-    receiveState(state) {
+    receiveState(state: EntityState) {
         // update state
         const prevState = this._state;
         const newState = this.getStateFromUpdate(state);
         this._state = newState;
 
         // call lifecycle method to notify for property changes
-        const notify = (prop, getter) => {
+        const notify = (prop: string, getter: (_: any) => any) => {
             console.log(`notifying ${prop}, prev + new state:`, prevState && getter(prevState), getter(newState));
             if(prevState === null || getter(prevState) !== getter(newState)) {
                 this.notify(prop);
@@ -70,8 +78,8 @@ export class BaseEntity extends GObject.Object {
         }
     }
 
-    didUpdateState(notify) {
-        notify("title", (s) => s.attributes["friendly_name"]);
+    didUpdateState(notify: any) {
+        notify("title", (s: any) => s.attributes["friendly_name"]);
     }
 
     get hass() {
@@ -91,28 +99,28 @@ export class BaseEntity extends GObject.Object {
     }
 }
 
-export const InputNumber = GObject.registerClass({
+@registerClass({
     Properties: {
         "value": doubleSpec("value", GObject.ParamFlags.READWRITE),
         "min-value": doubleSpec("min-value", GObject.ParamFlags.READABLE),
         "max-value": doubleSpec("max-value", GObject.ParamFlags.READABLE),
         "step": doubleSpec("step", GObject.ParamFlags.READABLE),
     }
-},
-class InputNumber extends BaseEntity {
-    getStateFromUpdate(state) {
+})
+export class InputNumber extends BaseEntity {
+    getStateFromUpdate(state: any) {
         return { value: Number(state.state), attributes: state.attributes };
     }
 
-    didUpdateState(notify) {
+    didUpdateState(notify: any) {
         super.didUpdateState(notify);
 
-        notify("min-value", (s) => s.attributes["min"]);
-        notify("max-value", (s) => s.attributes["max"]);
-        notify("step", (s) => s.attributes["step"]);
+        notify("min-value", (s: any) => s.attributes["min"]);
+        notify("max-value", (s: any) => s.attributes["max"]);
+        notify("step", (s: any) => s.attributes["step"]);
 
         // always notify value last to account for min/max changing also:
-        notify("value", (s) => s.value);
+        notify("value", (s: any) => s.value);
     }
 
     get value() {
@@ -144,16 +152,16 @@ class InputNumber extends BaseEntity {
     get step() {
         return this._state?.attributes?.step ?? 0;
     }
-});
+}
 
-export const InputBoolean = GObject.registerClass({
+@registerClass({
     Properties: {
         "value": booleanSpec("value", GObject.ParamFlags.READWRITE, false),
     }
-},
-class InputBoolean extends BaseEntity {
-    getStateFromUpdate(state) {
-        function tristate(state) {
+})
+export class InputBoolean extends BaseEntity {
+    getStateFromUpdate(state: any) {
+        function tristate(state: any) {
             if (state === "on") {
                 return true;
             } else if (state === "off") {
@@ -166,9 +174,9 @@ class InputBoolean extends BaseEntity {
         return { value: tristate(state.state), attributes: state.attributes };
     }
 
-    didUpdateState(notify) {
+    didUpdateState(notify: any) {
         super.didUpdateState(notify);
-        notify("value", (s) => s.value);
+        notify("value", (s: any) => s.value);
     }
 
     get value() {
@@ -197,23 +205,23 @@ class InputBoolean extends BaseEntity {
             });
         }
     }
-});
+}
 
-export const InputSelect = GObject.registerClass({
+@registerClass({
     Properties: {
         "options": GObject.ParamSpec.jsobject("options", "", "", GObject.ParamFlags.READABLE),
         "value": stringSpec("value", GObject.ParamFlags.READWRITE),
     }
-},
-class InputSelect extends BaseEntity {
-    getStateFromUpdate(state) {
+})
+export class InputSelect extends BaseEntity {
+    getStateFromUpdate(state: any) {
         return { value: state.state, attributes: state.attributes };
     }
 
-    didUpdateState(notify) {
+    didUpdateState(notify: any) {
         super.didUpdateState(notify);
-        notify("options", (s) => JSON.stringify(s.attributes.options));
-        notify("value", (s) => s.value);
+        notify("options", (s: any) => JSON.stringify(s.attributes.options));
+        notify("value", (s: any) => s.value);
         console.log("didUpdateState: ", this.value);
     }
 
@@ -238,4 +246,4 @@ class InputSelect extends BaseEntity {
             this.notify("value");
         }
     }
-});
+}

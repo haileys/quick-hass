@@ -1,7 +1,3 @@
-// import "@girs/clutter-14/ambient";
-// import "@girs/st-14/ambient";
-// import "@girs/gnome-shell/ambient";
-
 import Clutter from "gi://Clutter";
 import St from "gi://St";
 
@@ -10,27 +6,31 @@ import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { QuickMenuToggle, SystemIndicator } from 'resource:///org/gnome/shell/ui/quickSettings.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import config from "./config.js";
+import config from "./config";
+import type { Value, EntityItem, Widget } from "./config";
 import { HomeAssistant } from "./lib/hass";
 import { Slider, SwitchButton } from "./lib/controls";
 import { bindProperty, bindPropertyBidi, bindPropertyMapped } from "./lib/gobject";
-import { InputBoolean, InputNumber, InputSelect } from "./lib/hass/entity";
+import { InputBoolean, InputNumber, InputSelect, BaseEntity } from "./lib/hass/entity";
 import "./lib/external";
 
-function configureProperty(hass, target, property, configValue) {
+function configureProperty<T>(
+    hass: HomeAssistant,
+    target: any,
+    property: string,
+    configValue: Value<T> | undefined,
+) {
     if (typeof configValue === "undefined") {
         // do nothing
-    }
-
-    if (typeof configValue !== "object" || configValue === null) {
-        // direct value assignment
-        target[property] = configValue;
         return;
     }
 
-    if (configValue.entity) {
+    if (typeof configValue === "object" && configValue !== null && "entity" in configValue) {
         // data binding
         const entity = hass.getEntity(configValue.entity);
+        if (!entity) {
+            return;
+        }
 
         if (typeof configValue.map === "function") {
             // a map function is supplied
@@ -42,9 +42,12 @@ function configureProperty(hass, target, property, configValue) {
 
         return;
     }
+
+    // direct value assignment
+    target[property] = configValue;
 }
 
-function createInputNumberItem(entity, itemConfig) {
+function createInputNumberItem(entity: InputNumber, itemConfig: EntityItem) {
     const slider = new Slider({ x_expand: true });
     const sliderLabel = new St.Label({
         style_class: "quickhass-slider-value"
@@ -67,7 +70,7 @@ function createInputNumberItem(entity, itemConfig) {
     return box;
 }
 
-function createInputBooleanItem(entity, itemConfig) {
+function createInputBooleanItem(entity: InputBoolean, itemConfig: EntityItem) {
     const switchButton = new SwitchButton({});
     bindPropertyBidi(entity, "value", switchButton, "checked");
 
@@ -77,7 +80,7 @@ function createInputBooleanItem(entity, itemConfig) {
     return bin;
 }
 
-function createInputSelectItem(entity, itemConfig) {
+function createInputSelectItem(entity: InputSelect, itemConfig: EntityItem) {
     const menuItem = new PopupMenu.PopupSubMenuMenuItem("", false);
 
     // only close immediate menu upon item activated, not top menu:
@@ -139,7 +142,7 @@ function createInputSelectItem(entity, itemConfig) {
     return menuItem;
 }
 
-function createItemControl(entity, itemConfig) {
+function createItemControl(entity: BaseEntity, itemConfig: EntityItem) {
     if (entity instanceof InputNumber) {
         return createInputNumberItem(entity, itemConfig);
     } else if (entity instanceof InputBoolean) {
@@ -151,8 +154,12 @@ function createItemControl(entity, itemConfig) {
     }
 }
 
-function createItemMenuItem(hass, itemConfig) {
+function createItemMenuItem(hass: HomeAssistant, itemConfig: EntityItem) {
     const entity = hass.getEntity(itemConfig.entity);
+    if (!entity) {
+        return null;
+    }
+
     const control = createItemControl(entity, itemConfig);
 
     // if it's already a menu item, nothing further to do
@@ -177,14 +184,18 @@ function createItemMenuItem(hass, itemConfig) {
     return menuItem;
 }
 
-function createWidget(hass, widgetConfig) {
+function createWidget(hass: HomeAssistant, widgetConfig: Widget) {
     let widget;
 
     if (widgetConfig.toggle) {
         widget = new QuickMenuToggle({ toggleMode: true });
 
         const toggleEntity = hass.getEntity(widgetConfig.toggle.entity);
-        bindPropertyBidi(toggleEntity, "value", widget, "checked");
+        if (toggleEntity) {
+            bindPropertyBidi(toggleEntity, "value", widget, "checked");
+        }
+    } else {
+        throw new Error("unknown kind of widget?");
     }
 
     configureProperty(hass, widget, "title", widgetConfig.title);
@@ -195,14 +206,16 @@ function createWidget(hass, widgetConfig) {
 
     for (const itemConfig of widgetConfig.items) {
         const menuItem = createItemMenuItem(hass, itemConfig);
-        widget.menu.addMenuItem(menuItem);
+        if (menuItem) {
+            widget.menu.addMenuItem(menuItem);
+        }
     }
 
     return widget;
 }
 
 export default class QuickSettingsExampleExtension extends Extension {
-    _indicator: SystemIndicator;
+    _indicator: SystemIndicator | null = null;
 
     enable() {
         this._indicator = new SystemIndicator();
@@ -216,7 +229,10 @@ export default class QuickSettingsExampleExtension extends Extension {
     }
 
     disable() {
-        this._indicator.quickSettingsItems.forEach(item => item.destroy());
-        this._indicator.destroy();
+        if (this._indicator) {
+            this._indicator.quickSettingsItems.forEach(item => item.destroy());
+            this._indicator.destroy();
+            this._indicator = null;
+        }
     }
 }
