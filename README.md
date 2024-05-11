@@ -2,7 +2,7 @@
 
 GNOME Quick Settings extension for Home Assistant.
 
-![](https://gist.github.com/assets/179065/23fa8783-aad5-45aa-a3cd-0d2c79c8c2b9)
+![screenshot](https://github.com/haileys/quick-hass/assets/179065/72a228b7-4127-42e0-a1f9-cad511d7f5ba)
 
 ### Installing
 
