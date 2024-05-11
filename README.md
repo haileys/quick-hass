@@ -10,6 +10,16 @@ GNOME Quick Settings extension for Home Assistant.
 
 3. Log out and log back in
 
+4. Run `gnome-extensions enable quickhass@hails.org`
+
+### Developing
+
+Once the extension is installed and enabled, you can iterate without having to log out and log back in for each change you make (though you'll still need to log out the first time to enable the extension)
+
+The `./run-session` shell script will start a nested GNOME session under your main session and reload the extension and config afresh.
+
+It's a good idea to test your changes with `./run-session` before ending your existing GNOME session - shell extension crashes can bring down your whole session.
+
 ### What it looks like
 
 Here's a screenshot for ya:
