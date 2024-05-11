@@ -14,7 +14,7 @@ GNOME Quick Settings extension for Home Assistant.
 
 Here's a screenshot for ya:
 
-![screenshot](https://github.com/haileys/quick-hass/assets/179065/72a228b7-4127-42e0-a1f9-cad511d7f5ba)
+<img src="https://github.com/haileys/quick-hass/assets/179065/72a228b7-4127-42e0-a1f9-cad511d7f5ba" alt="screenshot" width="400">
 
 And here's the config behind that screenshot:
 
