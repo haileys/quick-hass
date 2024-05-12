@@ -17,6 +17,23 @@ export function booleanSpec(name: string, flags: number, default_: boolean) {
     return GObject.ParamSpec.boolean(name, "", "", flags, default_);
 }
 
+export type PropHelper = {
+    (name: string): GObject.ParamSpec,
+    readonly(name: string): GObject.ParamSpec,
+};
+
+function propType(factory: (name: string, flags: GObject.ParamFlags) => GObject.ParamSpec): PropHelper {
+    const rwProp = (name: string) => factory(name, GObject.ParamFlags.READWRITE);
+    rwProp.readonly = (name: string) => factory(name, GObject.ParamFlags.READABLE);
+    return rwProp;
+}
+
+export const prop = {
+    number: propType(doubleSpec),
+    string: propType(stringSpec),
+    boolean: propType((name, flags) => booleanSpec(name, flags, false)),
+}
+
 export function bindProperty(
     source: GObject.Object,
     sourceName: string,

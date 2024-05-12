@@ -1,26 +1,21 @@
 {
     "compilerOptions": {
+        "outDir": "./dist",
         "lib": ["ESNext"],
         "target": "ESNext",
         "module": "ESNext",
         "moduleResolution": "bundler",
         // "typeRoots": "./node_modules/@girs",
         "types": [
-            "@girs/gnome-shell/ambient",
             "@girs/clutter-14/ambient",
+            "@girs/gjs",
+            "@girs/gjs/dom",
+            "@girs/gnome-shell/ambient",
+            "@girs/soup-3.0/ambient",
             "@girs/st-14/ambient",
         ],
         "strict": true,
-        // "typeRoots": ["./node_modules/@girs"],
-        // "types": ["clutter-14", "st-14"]
-        // "module": "NodeNext",
-        // "moduleResolution": "NodeNext"
     },
-    // "include": [
-    //     "@girs/gnome-shell/ambient",
-    //     "@girs/clutter-14/ambient",
-    //     "@girs/st-14/ambient",
-    // ],
     "files": ["extension.ts"],
 }
 

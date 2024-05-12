@@ -1,7 +1,7 @@
 import { HassSocket, AnyMessage, MessageReply } from "./hass/socket.js";
-import { StateChangedEvent, EntityId, EntityState } from "./hass/types";
-import { newEntity, BaseEntity } from "./hass/entity";
-import type { HomeAssistant as HomeAssistantConfig } from "../config";
+import { StateChangedEvent, EntityId, EntityState } from "./hass/types.js";
+import { newEntity, BaseEntity } from "./hass/entity.js";
+import type { HomeAssistant as HomeAssistantConfig } from "../config.js";
 
 export class HomeAssistant {
     entities: Map<string, BaseEntity>;
@@ -10,7 +10,7 @@ export class HomeAssistant {
 
     constructor(config: HomeAssistantConfig) {
         this.entities = new Map();
-        this.socket = new HassSocket(config.url, config.token);
+        this.socket = new HassSocket(config);
         this.socket.onAuthenticated = () => {
             this.getStates();
             this.subscribeEvents();

@@ -3,7 +3,7 @@ import GObject from 'gi://GObject';
 import { Switch } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Slider as UiSlider } from "resource:///org/gnome/shell/ui/slider.js";
 
-import { doubleSpec, booleanSpec, bindProperty, registerClass } from "./gobject";
+import { doubleSpec, booleanSpec, bindProperty, registerClass } from "./gobject.js";
 
 interface SliderConstructorProps extends St.Bin.ConstructorProps {
     value: number,

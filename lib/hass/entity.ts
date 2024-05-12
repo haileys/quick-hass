@@ -1,7 +1,7 @@
 import GObject from "gi://GObject";
-import { stringSpec, doubleSpec, booleanSpec, registerClass } from "../gobject";
-import type { HomeAssistant } from "../hass";
-import type { EntityId, EntityState } from "./types";
+import { stringSpec, doubleSpec, booleanSpec, registerClass } from "../gobject.js";
+import type { HomeAssistant } from "../hass.js";
+import type { EntityId, EntityState } from "./types.js";
 
 export function newEntity(hass: HomeAssistant, entityId: EntityId) {
     const [entityType] = entityId.split(".");

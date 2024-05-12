@@ -12,7 +12,7 @@ import { HomeAssistant } from "./lib/hass";
 import { Slider, SwitchButton } from "./lib/controls";
 import { bindProperty, bindPropertyBidi, bindPropertyMapped } from "./lib/gobject";
 import { InputBoolean, InputNumber, InputSelect, BaseEntity } from "./lib/hass/entity";
-import "./lib/external";
+import "./lib/ui";
 
 function configureProperty<T>(
     hass: HomeAssistant,
