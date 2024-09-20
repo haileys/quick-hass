@@ -3,6 +3,7 @@
   "description": "Quick Settings for Home Assistant",
   "uuid": "quickhass@hails.org",
   "shell-version": [
-    "46"
+    "46",
+    "47"
   ]
 }
