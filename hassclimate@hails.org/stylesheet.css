@@ -1,0 +1,41 @@
+.quickhass-slider-value {
+    width: 56px;
+    text-overflow: ellipsis;
+    text-align: right;
+}
+
+.quickhass-item-title-label {
+    margin-right:8px;
+}
+
+.hassclimate-mode-container {
+    padding:0;
+    spacing:0;
+}
+
+.hassclimate-mode-container .button {
+    padding:auto;
+    margin:0;
+    border-radius:0px;
+}
+
+.hassclimate-mode-container .button:first-child {
+    border-radius:4px 0px 0px 4px;
+}
+
+.hassclimate-mode-container .button:last-child {
+    border-radius:0px 4px 4px 0px;
+}
+
+.hassclimate-mode-container .button:hover {
+    background:#666;
+}
+
+.hassclimate-mode-container .button:active {
+    background:#555;
+}
+
+.hassclimate-mode-container .button:checked {
+    background: -st-accent-color;
+    color: -st-accent-fg-color;
+}

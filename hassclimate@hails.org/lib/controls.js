@@ -10,7 +10,8 @@ export const Slider = GObject.registerClass({
         "min-value": doubleSpec("min-value", GObject.ParamFlags.READWRITE),
         "max-value": doubleSpec("max-value", GObject.ParamFlags.READWRITE),
         "step": doubleSpec("step", GObject.ParamFlags.READWRITE),
-    }
+    },
+    Signals: { changed: {} },
 },
 class Slider extends St.Bin {
     _slider = null;
@@ -18,7 +19,8 @@ class Slider extends St.Bin {
     _minValue = 0;
     _maxValue = 1;
     _step = 1;
-    _isDragging = false;
+    // null if not dragging, non-null if dragging
+    _valueBeforeDragging = null;
 
     constructor(params) {
         super(params);
@@ -38,13 +40,32 @@ class Slider extends St.Bin {
             if (steppedValue !== this._value) {
                 this._value = steppedValue;
                 this.notify("value");
+
+                if (!this._isDragging) {
+                    this.emit("changed");
+                }
             }
         });
 
-        this._slider.connect("drag-begin", () => { this._isDragging = true; });
-        this._slider.connect("drag-end", () => { this._isDragging = false; });
+        this._slider.connect("drag-begin", () => {
+            this._valueBeforeDragging = this.value;
+        });
+
+        this._slider.connect("drag-end", () => {
+            const valueBeforeDragging = this._valueBeforeDragging;
+            this._valueBeforeDragging = null;
+
+            if (valueBeforeDragging !== this.value) {
+                // emit changed event that was deferred while dragging
+                this.emit("changed");
+            }
+        });
 
         this.set_child(this._slider);
+    }
+
+    get _isDragging() {
+        return this._valueBeforeDragging !== null;
     }
 
     updateRange(min, max) {

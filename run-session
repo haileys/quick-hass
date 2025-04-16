@@ -1,2 +1,0 @@
-#!/bin/bash -eu
-exec dbus-run-session -- gnome-shell --nested --wayland

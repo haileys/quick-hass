@@ -1,25 +1,24 @@
 import GLib from "gi://GLib";
-import { HomeAssistant } from "./lib/hass.js";
-
-const ENTITY_TEMP_REQUEST = "input_number.thermostat_request_temperature";
-const ENTITY_HEATING_SWITCH = "input_boolean.heating";
+import { HomeAssistant } from "./hassclimate@hails.org/lib/hass.js";
 
 const loop = GLib.MainLoop.new(null, false);
 
 const hassUrl = GLib.getenv("HASS_SOCKET_URL");
 const hassToken = GLib.getenv("HASS_TOKEN");
 const hassConfig = { url: hassUrl, token: hassToken };
-const hass = new HomeAssistant(hassConfig, [
-    ENTITY_TEMP_REQUEST,
-    ENTITY_HEATING_SWITCH,
-]);
+const hass = new HomeAssistant(hassConfig);
 
-const tempRequest = hass.getEntity(ENTITY_TEMP_REQUEST);
-tempRequest.connect("notify::value", () => console.log(tempRequest.value));
+const climate = hass.getEntity("climate.samsung_hvac");
 
-const heatingSwitch = hass.getEntity(ENTITY_HEATING_SWITCH);
-heatingSwitch.connect("notify::value", () => console.log(heatingSwitch.value));
+climate.connect("notify", () => {
+    // console.log(`mode: ${climate}`);
+});
 
-// setTimeout(() => { hass.setTemperatureRequest(21); }, 1000);
+climate.connect("notify::ready", () => {
+    // climate.mode = "fan_only";
+    climate.fan_mode = "low";
+    // console.log(JSON.stringify(climate.attributes));
+
+});
 
 loop.run();

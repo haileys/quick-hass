@@ -4,13 +4,19 @@ import { stringSpec, doubleSpec, booleanSpec } from '../gobject.js';
 export function newEntity(hass, entityId) {
     const [entityType] = entityId.split(".");
 
-    switch (entityType) {
-    case "input_number": return new InputNumber(hass, entityId);
-    case "input_boolean": return new InputBoolean(hass, entityId);
-    case "input_select": return new InputSelect(hass, entityId);
-    default:
-        throw `unknown home assistant entity type: ${entityId}`;
+    const ctors = {
+        input_number: InputNumber,
+        input_boolean: InputBoolean,
+        input_select: InputSelect,
+        climate: Climate,
+    };
+
+    const ctor = ctors[entityType];
+    if (ctor) {
+        return new ctor(hass, entityId);
     }
+
+    throw `unknown home assistant entity type: ${entityId}`;
 }
 
 export const BaseEntity = GObject.registerClass({
@@ -235,3 +241,114 @@ class InputSelect extends BaseEntity {
         }
     }
 });
+
+export const Climate = GObject.registerClass({
+    Properties: {
+        "mode": stringSpec("mode", GObject.ParamFlags.READWRITE),
+        "current-temp": doubleSpec("current-temp", GObject.ParamFlags.READWRITE),
+        "set-temp": doubleSpec("set-temp", GObject.ParamFlags.READWRITE),
+        "set-temp-step": doubleSpec("set-temp-step", GObject.ParamFlags.READWRITE),
+        "fan-mode": stringSpec("fan-mode", GObject.ParamFlags.READWRITE),
+        "min-temp": doubleSpec("min-temp", GObject.ParamFlags.READWRITE),
+        "max-temp": doubleSpec("max-temp", GObject.ParamFlags.READWRITE),
+    }
+},
+class Climate extends BaseEntity {
+    _isNotifying = false;
+
+    static getStateFromUpdate(state) {
+        return { mode: state.state, attributes: state.attributes };
+    }
+
+    didUpdateState(notify) {
+        super.didUpdateState(notify);
+
+        // notify these ones first because they affect rounding in the ui
+        // slider, which will cause a temp change to come back straight
+        // away if set_temp is notified first:
+        notify("min-temp", (s) => s.attributes?.min_temp);
+        notify("max-temp", (s) => s.attributes?.max_temp);
+        notify("set-temp-step", (s) => s.attributes?.target_temp_step);
+
+        // now notify normal props
+        notify("mode", (s) => s.mode);
+        notify("fan-mode", (s) => s.attributes?.fan_mode);
+        notify("current-temp", (s) => s.attributes?.current_temperature);
+        notify("set-temp", (s) => s.attributes?.temperature);
+    }
+
+    _callService(method, params) {
+        const stack = new Error().stack;
+        console.log();
+        console.log(`++++++ Climate._callService: ${method} ${JSON.stringify(params)}`);
+        console.log(stack);
+        console.log();
+        this._hass.sendMessage({
+            type: "call_service",
+            domain: "climate",
+            service: method,
+            target: { entity_id: this.entity_id },
+            service_data: params,
+        });
+    }
+
+    get mode() {
+        return this._state?.mode ?? null;
+    }
+
+    set mode(mode) {
+        if (this.mode !== mode) {
+            this._callService("set_hvac_mode", { hvac_mode: mode });
+        }
+    }
+
+    get attributes() {
+        return this._state?.attributes ?? null;
+    }
+
+    get current_temp() {
+        return this.attributes?.current_temperature;
+    }
+
+    get set_temp() {
+        return this.attributes?.temperature;
+    }
+
+    set set_temp(temp) {
+        console.log(`this.set_temp = ${this.set_temp}`);
+        console.log(`temp = ${temp}`);
+
+        if (this.set_temp === null) {
+            // this is a mode that doesn't have a set temp
+            return;
+        }
+
+        const difference = Math.abs(this.set_temp - temp);
+        const roundingThreshold = this.set_temp_step / 2;
+        if (difference >= roundingThreshold) {
+            this._callService("set_temperature", { temperature: temp });
+        }
+    }
+
+    get set_temp_step() {
+        return this.attributes?.target_temp_step;
+    }
+
+    get fan_mode() {
+        return this.attributes?.fan_mode;
+    }
+
+    set fan_mode(mode) {
+        if (this.fan_mode !== mode) {
+            this._callService("set_fan_mode", { fan_mode: mode });
+        }
+    }
+
+    get min_temp() {
+        return this.attributes?.min_temp;
+    }
+
+    get max_temp() {
+        return this.attributes?.max_temp;
+    }
+})

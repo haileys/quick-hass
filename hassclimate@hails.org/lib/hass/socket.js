@@ -9,6 +9,7 @@ export class HassSocket {
     #connection = null;
     msgId = 1;
     msgHandlers = {};
+    deferredMsgs = [];
 
     constructor(url, token) {
         this.url = url;
@@ -77,10 +78,18 @@ export class HassSocket {
     }
 
     sendRaw(msg) {
+        if (!this.#connection) {
+            return;
+        }
+
         this.#connection.send_text(JSON.stringify(msg));
     }
 
     sendMessage(msg, callback) {
+        if (!callback) {
+            callback = () => {};
+        }
+
         const id = this.msgId++;
         this.sendRaw({ id, ...msg });
         this.msgHandlers[id] = { callback, oneshot: true };

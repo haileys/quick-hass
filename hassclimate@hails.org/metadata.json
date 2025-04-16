@@ -1,0 +1,9 @@
+{
+  "name": "hassclimate",
+  "description": "Quick Settings for Home Assistant climate control",
+  "uuid": "hassclimate@hails.org",
+  "shell-version": [
+    "47",
+    "48"
+  ]
+}
