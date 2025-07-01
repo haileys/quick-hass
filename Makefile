@@ -8,6 +8,7 @@ default:
 install:
 	mkdir -p $(INSTALLBASE)
 	cp -r $(UUID) $(INSTALLBASE)/
+	cp config.js $(INSTALLBASE)/$(UUID)/
 
 .PHONY: debug
 debug: install
